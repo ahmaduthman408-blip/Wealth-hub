@@ -18,6 +18,7 @@ export default function Home() {
           <img 
             src="https://images.unsplash.com/photo-1615486171434-c7e6c4667a42?auto=format&fit=crop&q=80&w=2000" 
             alt="Luxury Perfumes Background" 
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover"
           />
         </div>

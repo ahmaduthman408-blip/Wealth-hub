@@ -78,7 +78,7 @@ export default function Cart() {
             <div className="lg:col-span-2 space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center gap-6">
-                  <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-xl" />
+                  <img src={item.image} alt={item.name} referrerPolicy="no-referrer" className="w-24 h-24 object-cover rounded-xl" />
                   <div className="flex-1 text-center sm:text-left">
                     <h3 className="text-lg font-bold text-navy-900">{item.name}</h3>
                     <p className="text-blue-600 font-bold mb-2">₦{item.price.toLocaleString()}</p>

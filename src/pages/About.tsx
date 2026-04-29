@@ -42,6 +42,7 @@ export default function About() {
             <img 
               src="https://images.unsplash.com/photo-1594035910387-fea477242680?auto=format&fit=crop&q=80&w=1000" 
               alt="About Us" 
+              referrerPolicy="no-referrer"
               className="relative rounded-[2rem] shadow-2xl object-cover h-[600px] w-full"
             />
           </motion.div>

@@ -3,23 +3,62 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useProductStore, Product } from '../store/useProductStore';
 import { useOrderStore, Order } from '../store/useOrderStore';
 import { Navigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Box, ShoppingCart, Video, Image as ImageIcon, CheckCircle, Clock, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Box, ShoppingCart, Video, Image as ImageIcon, CheckCircle, Clock, Search, ShieldCheck } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const { user } = useAuthStore();
+  const { user, login } = useAuthStore();
   const { products, addProduct, updateProduct, deleteProduct } = useProductStore();
   const { orders, updateOrderStatus, deleteOrder } = useOrderStore();
   
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [orderSearch, setOrderSearch] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '', description: '', price: 0, category: '', image: '', videoUrl: ''
   });
 
   if (!user || user.role !== 'admin') {
-    return <Navigate to="/" />;
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow-xl shadow-gray-200/50 sm:rounded-2xl sm:px-10 border border-gray-100 mt-16">
+            <h2 className="text-2xl font-bold text-center text-navy-900 mb-6 flex justify-center items-center gap-2">
+              <ShieldCheck className="h-8 w-8 text-orange-500" /> Admin Access
+            </h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (adminPassword === 'HUB123') {
+                login({ name: 'Admin', email: 'admin@abunasirwealth.com', role: 'admin' });
+              } else {
+                alert('Incorrect password. Access denied.');
+                setAdminPassword('');
+              }
+            }} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Enter Password</label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-gray-50"
+                  placeholder="••••••••"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-navy-900 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+              >
+                Access Dashboard
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,7 +176,7 @@ export default function AdminDashboard() {
                   </div>
                   {formData.image && (
                     <div className="mt-2 h-20 w-20 rounded-lg overflow-hidden border">
-                      <img src={formData.image} alt="Preview" className="h-full w-full object-cover" />
+                      <img src={formData.image} alt="Preview" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                     </div>
                   )}
                 </div>
@@ -180,7 +219,7 @@ export default function AdminDashboard() {
                       <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <img src={product.image} alt={product.name} className="w-12 h-12 rounded-lg object-cover" />
+                            <img src={product.image} alt={product.name} referrerPolicy="no-referrer" className="w-12 h-12 rounded-lg object-cover" />
                             <span className="font-bold text-navy-900">{product.name}</span>
                           </div>
                         </td>
@@ -248,19 +287,39 @@ export default function AdminDashboard() {
                         <td className="p-4 font-mono text-xs text-gray-500">{order.reference}</td>
                         <td className="p-4 text-sm text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
                         <td className="p-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max ${
-                            order.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {order.status === 'Completed' ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                            {order.status}
-                          </span>
+                          <select 
+                            value={order.status}
+                            onChange={(e) => updateOrderStatus(order.id, e.target.value as any, order.trackingNumber)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold outline-none cursor-pointer appearance-none ${
+                                ['Completed', 'Delivered'].includes(order.status) ? 'bg-green-100 text-green-700' :
+                                ['Cancelled'].includes(order.status) ? 'bg-red-100 text-red-700' :
+                                'bg-orange-100 text-orange-700'
+                            }`}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                            <option value="Completed">Completed</option>
+                          </select>
+                          {order.trackingNumber && (
+                            <div className="mt-2 text-[10px] text-gray-500 font-mono">
+                              Track: {order.trackingNumber}
+                            </div>
+                          )}
                         </td>
                         <td className="p-4 text-right space-x-2">
                           <button 
-                            onClick={() => updateOrderStatus(order.id, order.status === 'Pending' ? 'Completed' : 'Pending')}
+                            onClick={() => {
+                              const trackId = window.prompt("Enter Tracking ID/Link:", order.trackingNumber || "");
+                              if (trackId !== null) {
+                                updateOrderStatus(order.id, order.status, trackId);
+                              }
+                            }}
                             className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-colors border"
                           >
-                            Toggle Status
+                            Tracking
                           </button>
                           <button onClick={() => deleteOrder(order.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-flex align-middle">
                             <Trash2 className="h-4 w-4" />

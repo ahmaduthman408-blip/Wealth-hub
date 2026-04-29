@@ -21,11 +21,11 @@ export default function Auth() {
     }
 
     if (isLogin) {
-      // Simulate Login
       if (formData.password === 'HUB123') {
         login({ name: 'Admin User', email: formData.email, role: 'admin' });
         navigate('/admin');
       } else {
+        // Standard customer login
         login({ name: formData.email.split('@')[0], email: formData.email, role: 'customer' });
         navigate('/products');
       }

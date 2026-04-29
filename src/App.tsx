@@ -13,6 +13,7 @@ import Contact from './pages/Contact';
 import Auth from './pages/Auth';
 import AdminDashboard from './pages/AdminDashboard';
 import Cart from './pages/Cart';
+import TrackOrder from './pages/TrackOrder';
 import WhatsAppButton from './components/WhatsAppButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { useEffect } from 'react';
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/track" element={<TrackOrder />} />
           </Routes>
         </main>
         <WhatsAppButton />

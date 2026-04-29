@@ -1,13 +1,16 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
+export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Completed';
+
 export interface Order {
   id: string; // Typically UUID from DB
   customerEmail: string;
   productName: string;
   amount: number;
   reference: string;
-  status: 'Pending' | 'Completed';
+  status: OrderStatus;
+  trackingNumber?: string;
   date: string; // mapped from created_at
 }
 
@@ -17,7 +20,7 @@ interface OrderState {
   error: string | null;
   fetchOrders: () => Promise<void>;
   addOrder: (order: Omit<Order, 'id' | 'date'>) => Promise<void>;
-  updateOrderStatus: (id: string, status: 'Pending' | 'Completed') => Promise<void>;
+  updateOrderStatus: (id: string, status: OrderStatus, trackingNumber?: string) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
 }
 
@@ -42,7 +45,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         productName: item.product_name,
         amount: item.amount,
         reference: item.reference,
-        status: item.status as 'Pending' | 'Completed',
+        status: item.status as OrderStatus,
+        trackingNumber: item.tracking_number,
         date: item.created_at
       }));
 
@@ -60,7 +64,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         product_name: order.productName,
         amount: order.amount,
         reference: order.reference,
-        status: order.status
+        status: order.status,
+        tracking_number: order.trackingNumber || null
       };
 
       const { error } = await supabase
@@ -74,11 +79,16 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  updateOrderStatus: async (id, status) => {
+  updateOrderStatus: async (id, status, trackingNumber) => {
     try {
+      const updateData: any = { status };
+      if (trackingNumber !== undefined) {
+        updateData.tracking_number = trackingNumber;
+      }
+      
       const { error } = await supabase
         .from('orders')
-        .update({ status })
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;

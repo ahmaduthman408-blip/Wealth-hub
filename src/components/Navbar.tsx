@@ -11,8 +11,6 @@ export default function Navbar() {
   const { items: cartItems } = useCartStore();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = React.useState(false);
-  const [adminPassword, setAdminPassword] = React.useState('');
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -22,25 +20,8 @@ export default function Navbar() {
   };
 
   const handleAdminClick = () => {
-    if (user?.role === 'admin') {
-      navigate('/admin');
-      setIsOpen(false);
-    } else {
-      setIsAdminModalOpen(true);
-      setIsOpen(false);
-    }
-  };
-
-  const verifyAdminPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPassword === 'HUB123') {
-      login({ name: 'Admin', email: 'admin@abunasirwealth.com', role: 'admin' });
-      setIsAdminModalOpen(false);
-      setAdminPassword('');
-      navigate('/admin');
-    } else {
-      alert("Incorrect password. Access denied.");
-    }
+    navigate('/admin');
+    setIsOpen(false);
   };
 
   const navLinks = [
@@ -48,6 +29,7 @@ export default function Navbar() {
     { name: 'Products', path: '/products' },
     { name: 'About', path: '/about' },
     { name: 'Contact', path: '/contact' },
+    { name: 'Track Order', path: '/track' },
   ];
 
   return (
@@ -181,59 +163,6 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Admin Password Modal */}
-      <AnimatePresence>
-        {isAdminModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-sm border border-gray-100"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-navy-900 flex items-center gap-2">
-                  <ShieldCheck className="h-6 w-6 text-orange-500" /> Admin Access
-                </h3>
-                <button
-                  onClick={() => {
-                    setIsAdminModalOpen(false);
-                    setAdminPassword('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              <form onSubmit={verifyAdminPassword} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Enter Admin Password</label>
-                  <input
-                    type="password"
-                    required
-                    autoFocus
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-gray-50"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-navy-900 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition-colors"
-                >
-                  Verify
-                </button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </nav>
   );
 }

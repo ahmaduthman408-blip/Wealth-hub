@@ -83,6 +83,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <img 
           src={product.image} 
           alt={product.name} 
+          referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 ease-out"
         />
         {/* Urgency Badge */}
