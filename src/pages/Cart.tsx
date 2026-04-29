@@ -34,13 +34,11 @@ export default function Cart() {
         const productNames = items.map(item => `${item.name} (x${item.quantity})`).join(', ');
 
         addOrder({
-          id: response.reference,
           customerEmail: user.email,
           productName: productNames,
           amount: total,
           reference: response.reference,
           status: 'Completed',
-          date: new Date().toISOString(),
         });
 
         // Redirect to WhatsApp

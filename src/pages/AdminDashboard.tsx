@@ -39,9 +39,13 @@ export default function AdminDashboard() {
       setIsEditing(null);
     } else {
       addProduct({
-        ...formData,
-        id: Math.random().toString(36).substr(2, 9),
-      } as Product);
+        name: formData.name || '',
+        description: formData.description || '',
+        price: formData.price || 0,
+        category: formData.category || '',
+        image: formData.image || '',
+        videoUrl: formData.videoUrl || '',
+      });
     }
     setFormData({ name: '', description: '', price: 0, category: '', image: '', videoUrl: '' });
   };

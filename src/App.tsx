@@ -15,8 +15,19 @@ import AdminDashboard from './pages/AdminDashboard';
 import Cart from './pages/Cart';
 import WhatsAppButton from './components/WhatsAppButton';
 import { motion, AnimatePresence } from 'motion/react';
+import { useEffect } from 'react';
+import { useProductStore } from './store/useProductStore';
+import { useOrderStore } from './store/useOrderStore';
 
 export default function App() {
+  const { fetchProducts } = useProductStore();
+  const { fetchOrders } = useOrderStore();
+
+  useEffect(() => {
+    fetchProducts();
+    fetchOrders();
+  }, [fetchProducts, fetchOrders]);
+
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
