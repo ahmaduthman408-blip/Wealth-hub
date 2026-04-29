@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
 export interface Product {
@@ -76,121 +77,139 @@ const defaultProducts: Product[] = [
   }
 ];
 
-export const useProductStore = create<ProductState>((set, get) => ({
-  products: defaultProducts,
-  isLoading: false,
-  error: null,
-  
-  fetchProducts: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+export const useProductStore = create<ProductState>()(
+  persist(
+    (set, get) => ({
+      products: defaultProducts,
+      isLoading: false,
+      error: null,
+      
+      fetchProducts: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-      if (error) throw error;
+          if (error) throw error;
 
-      // Map snake_case from DB to camelCase in frontend
-      const mappedProducts: Product[] = (data || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        price: item.price,
-        category: item.category,
-        image: item.image,
-        timerEndsAt: item.timer_ends_at ? Number(item.timer_ends_at) : null,
-        videoUrl: item.video_url
-      }));
+          // Map snake_case from DB to camelCase in frontend
+          const mappedProducts: Product[] = (data || []).map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            category: item.category,
+            image: item.image,
+            timerEndsAt: item.timer_ends_at ? Number(item.timer_ends_at) : null,
+            videoUrl: item.video_url
+          }));
 
-      // If empty, fallback to default products
-      if (mappedProducts.length === 0) {
-        set({ products: defaultProducts, isLoading: false });
-      } else {
-        set({ products: mappedProducts, isLoading: false });
+          // If db has data, use it. Otherwise keep local state if it exists, or defaults.
+          if (mappedProducts.length > 0) {
+            set({ products: mappedProducts, isLoading: false });
+          } else {
+            // Check if current products are just defaults or missing
+            const currentProducts = get().products;
+            if (!currentProducts || currentProducts.length === 0) {
+              set({ products: defaultProducts, isLoading: false });
+            } else {
+              set({ isLoading: false });
+            }
+          }
+        } catch (err: any) {
+          console.error('Error fetching products:', err);
+          // Only fallback to defaults if we have literally nothing in local state
+          const currentProducts = get().products;
+          if (!currentProducts || currentProducts.length === 0) {
+            set({ error: err.message, products: defaultProducts, isLoading: false });
+          } else {
+            set({ error: err.message, isLoading: false });
+          }
+        }
+      },
+
+      addProduct: async (product) => {
+        try {
+          const dbPayload = {
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            category: product.category,
+            image: product.image,
+            timer_ends_at: product.timerEndsAt,
+            video_url: product.videoUrl
+          };
+
+          const { data, error } = await supabase
+            .from('products')
+            .insert([dbPayload])
+            .select()
+            .single();
+
+          if (error) throw error;
+          
+          await get().fetchProducts();
+        } catch (err: any) {
+          console.error('Error adding product to DB, falling back to local state:', err);
+          const newProduct: Product = {
+            id: Math.random().toString(),
+            ...product
+          };
+          set(state => ({ products: [...(state.products || []), newProduct] }));
+        }
+      },
+
+      updateProduct: async (id, updatedProduct) => {
+        try {
+          const dbPayload: any = {};
+          if (updatedProduct.name !== undefined) dbPayload.name = updatedProduct.name;
+          if (updatedProduct.description !== undefined) dbPayload.description = updatedProduct.description;
+          if (updatedProduct.price !== undefined) dbPayload.price = updatedProduct.price;
+          if (updatedProduct.category !== undefined) dbPayload.category = updatedProduct.category;
+          if (updatedProduct.image !== undefined) dbPayload.image = updatedProduct.image;
+          if (updatedProduct.timerEndsAt !== undefined) dbPayload.timer_ends_at = updatedProduct.timerEndsAt;
+          if (updatedProduct.videoUrl !== undefined) dbPayload.video_url = updatedProduct.videoUrl;
+
+          const { error } = await supabase
+            .from('products')
+            .update(dbPayload)
+            .eq('id', id);
+
+          if (error) throw error;
+          
+          await get().fetchProducts();
+        } catch (err: any) {
+          console.error('Error updating product in DB, falling back to local state:', err);
+          set(state => ({
+            products: (state.products || []).map(p => p.id === id ? { ...p, ...updatedProduct } : p)
+          }));
+        }
+      },
+
+      deleteProduct: async (id) => {
+        try {
+          // Immediately update local state for optimistic UI
+          set(state => ({
+            products: (state.products || []).filter(p => p.id !== id)
+          }));
+          
+          const { error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', id);
+
+          if (error) throw error;
+          
+        } catch (err: any) {
+          console.error('Error deleting product in DB, continuing with local state:', err);
+        }
       }
-    } catch (err: any) {
-      console.error('Error fetching products:', err);
-      // Fallback to default products on error
-      set({ error: err.message, products: defaultProducts, isLoading: false });
+    }),
+    {
+      name: 'product-store-storage',
+      partialize: (state) => ({ products: state.products }),
     }
-  },
-
-  addProduct: async (product) => {
-    try {
-      // Map camelCase to snake_case for DB
-      const dbPayload = {
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        category: product.category,
-        image: product.image,
-        timer_ends_at: product.timerEndsAt,
-        video_url: product.videoUrl
-      };
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([dbPayload])
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      // Re-fetch or manually add to state
-      await get().fetchProducts();
-    } catch (err: any) {
-      console.error('Error adding product to DB, falling back to local state:', err);
-      const newProduct: Product = {
-        id: Math.random().toString(),
-        ...product
-      };
-      set(state => ({ products: [...state.products, newProduct] }));
-    }
-  },
-
-  updateProduct: async (id, updatedProduct) => {
-    try {
-      const dbPayload: any = {};
-      if (updatedProduct.name !== undefined) dbPayload.name = updatedProduct.name;
-      if (updatedProduct.description !== undefined) dbPayload.description = updatedProduct.description;
-      if (updatedProduct.price !== undefined) dbPayload.price = updatedProduct.price;
-      if (updatedProduct.category !== undefined) dbPayload.category = updatedProduct.category;
-      if (updatedProduct.image !== undefined) dbPayload.image = updatedProduct.image;
-      if (updatedProduct.timerEndsAt !== undefined) dbPayload.timer_ends_at = updatedProduct.timerEndsAt;
-      if (updatedProduct.videoUrl !== undefined) dbPayload.video_url = updatedProduct.videoUrl;
-
-      const { error } = await supabase
-        .from('products')
-        .update(dbPayload)
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      await get().fetchProducts();
-    } catch (err: any) {
-      console.error('Error updating product in DB, falling back to local state:', err);
-      set(state => ({
-        products: state.products.map(p => p.id === id ? { ...p, ...updatedProduct } : p)
-      }));
-    }
-  },
-
-  deleteProduct: async (id) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      await get().fetchProducts();
-    } catch (err: any) {
-      console.error('Error deleting product in DB, falling back to local state:', err);
-      set(state => ({
-        products: state.products.filter(p => p.id !== id)
-      }));
-    }
-  }
-}));
+  )
+);
