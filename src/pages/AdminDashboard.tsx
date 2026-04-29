@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useProductStore, Product } from '../store/useProductStore';
 import { useOrderStore, Order } from '../store/useOrderStore';
 import { Navigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Box, ShoppingCart, Video, Image as ImageIcon, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Box, ShoppingCart, Video, Image as ImageIcon, CheckCircle, Clock, Search } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [orderSearch, setOrderSearch] = useState('');
   
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '', description: '', price: 0, category: '', image: '', videoUrl: ''
@@ -204,6 +205,19 @@ export default function AdminDashboard() {
 
         {activeTab === 'orders' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold mb-4">Order Tracking</h2>
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Track by Reference ID or Email..."
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+            </div>
             <div className="overflow-x-auto">
               {orders.length === 0 ? (
                 <div className="p-12 text-center text-gray-500">
@@ -218,17 +232,21 @@ export default function AdminDashboard() {
                       <th className="p-4 font-semibold text-gray-600">Item</th>
                       <th className="p-4 font-semibold text-gray-600">Amount</th>
                       <th className="p-4 font-semibold text-gray-600">Ref</th>
+                      <th className="p-4 font-semibold text-gray-600">Date</th>
                       <th className="p-4 font-semibold text-gray-600">Status</th>
                       <th className="p-4 font-semibold text-gray-600 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map(order => (
+                    {orders
+                      .filter(order => order.reference.toLowerCase().includes(orderSearch.toLowerCase()) || order.customerEmail.toLowerCase().includes(orderSearch.toLowerCase()))
+                      .map(order => (
                       <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                         <td className="p-4 font-medium text-navy-900">{order.customerEmail}</td>
                         <td className="p-4 text-gray-600">{order.productName}</td>
                         <td className="p-4 font-bold text-gray-900">₦{order.amount.toLocaleString()}</td>
                         <td className="p-4 font-mono text-xs text-gray-500">{order.reference}</td>
+                        <td className="p-4 text-sm text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
                         <td className="p-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max ${
                             order.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'

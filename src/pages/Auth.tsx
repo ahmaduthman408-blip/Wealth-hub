@@ -133,7 +133,7 @@ export default function Auth() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-gray-500">
-                {isLogin ? 'Use HUB123 for admin account' : 'Must be at least 6 characters.'}
+                {!isLogin && 'Must be at least 6 characters.'}
               </p>
             </div>
 

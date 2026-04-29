@@ -222,7 +222,6 @@ export default function Navbar() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-gray-50"
                     placeholder="••••••••"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Hint: HUB123</p>
                 </div>
                 <button
                   type="submit"
